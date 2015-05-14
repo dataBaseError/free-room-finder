@@ -1,0 +1,107 @@
+
+class Acronyms
+
+    DAY = {1 => 'M',
+           2 => 'T',
+           3 => 'W',
+           4 => 'R',
+           5 => 'F'}
+
+    # Dictionary mapping the semesters to the appropriate post data
+    SEMESTER = {'winter'=> '01',
+                'fall'=> '09',
+                'summer'=> '05',
+                'spring/summer' => '05'}
+
+    # Dictionary mapping campuses to parts of the url search strings
+    CAMPUSES = {'ALL'=> '&sel_camp=%25',
+                'UON'=> '&sel_camp=UON',
+                'UOD'=> '&sel_camp=UOD',
+                'UOG'=> '&sel_camp=dummy'}
+
+    # Dictionary mapping campus acronyms to the full campus name
+    CAMPUS_ACRONYM = {'UON'=> 'North Oshawa Campus',
+                       'UOD'=> 'Downtown Oshawa Campus',
+                       'UOG'=> 'Campus-Georgian Campus',
+                       'TRN'=> 'Trent at Oshawa Thornton Campus',
+                       'WEB'=> 'Web Course',
+                       'OTH'=> 'Other Campus'}
+
+    # Dictionary mapping class types to acronyms
+    CLASS_TYPE = {'LEC'=> 'Lecture',
+                   'TUT'=> 'Tutorial',
+                   'LAB'=> 'Laboratory',
+                   'THS'=> 'Thesis/Project',
+                   'WEB'=> 'Web Course',
+                   'WRK'=> 'Work Term',
+                   'SEM'=> 'Seminar',
+                   'IND'=> 'Independent Study',
+                   'OTH'=> 'Other',
+                   'FLD'=> 'Field Placement'}
+
+    # Dictionary mapping all of the faculty acronyms to descriptions
+    FACULTIES = {'ACHL'=> 'Ancient History and Classics',
+                 'AEDT'=> 'Adult Education & Digital Tech',
+                 'ALSU'=> 'Academic Learning & Success',
+                 'ANTH'=> 'Anthropology',
+                 'APBS'=> 'Applied Bioscience',
+                 'AUTE'=> 'Automotive Engineering',
+                 'BIOC'=> 'Biochemistry',
+                 'BIOL'=> 'Biology',
+                 'BUSI'=> 'Business',
+                 'CANN'=> 'Canadian Studies',
+                 'CDEV'=> 'Community Development',
+                 'CDPS'=> 'Community Dev & Policy Studies',
+                 'CHEM'=> 'Chemistry',
+                 'CHIN'=> 'Chinese Studies',
+                 'CLLI'=> 'Classical Literature',
+                 'CLST'=> 'Cultural Studies',
+                 'COMM'=> 'Communications',
+                 'CSCI'=> 'Computer Science',
+                 'CURS'=> 'Curriculum Studies',
+                 'ECON'=> 'Economics',
+                 'EDUC'=> 'Education',
+                 'ELEE'=> 'Electrical Engineering',
+                 'ENGL'=> 'English',
+                 'ENGR'=> 'Engineering',
+                 'ENVR'=> 'Environmental Studies',
+                 'ENVS'=> 'Environmental Science',
+                 'FREN'=> 'French',
+                 'FSCI'=> 'Forensic Science',
+                 'GEOG'=> 'Geography',
+                 'GRMN'=> 'German',
+                 'HIST'=> 'History',
+                 'HLSC'=> 'Health Science',
+                 'HSST'=> 'Hispanic Studies',
+                 'IDST'=> 'Interdisciplinery Studies',
+                 'INFR'=> 'Information Technology',
+                 'JSTS'=> 'Justice Studies',
+                 'LGLS'=> 'Legal Studies',
+                 'MANE'=> 'Manufacturing Engineering',
+                 'MATH'=> 'Mathematics',
+                 'MCSC'=> 'Modelling & Computational Scie',
+                 'MECE'=> 'Mechanical Engineering',
+                 'MEET'=> 'Scheduled Meetings',
+                 'MITS'=> 'Masters of IT Security',
+                 'MLAL'=> 'Modern Languages',
+                 'MLSC'=> 'Medical Lab Science',
+                 'MTSC'=> 'Materials Science',
+                 'NAST'=> 'Native Studies',
+                 'NUCL'=> 'Nuclear',
+                 'NURS'=> 'Nursing',
+                 'PHIL'=> 'Philosophy',
+                 'PHY'=> 'Physics',
+                 'POSC'=> 'Political Science',
+                 'PSYC'=> 'Psychology',
+                 'PUBP'=> 'Public Policy',
+                 'RADI'=> 'Radiation Science',
+                 'SCCO'=> 'Science Co-op Work Term',
+                 'SCIE'=> 'Science',
+                 'SOCI'=> 'Sociology',
+                 'SOFE'=> 'Software Engineering',
+                 'SSCI'=> 'Social Science',
+                 'STAT'=> 'Statistics',
+                 'WEB'=> 'Web',
+                 'WMST'=> 'Women Studies',
+                 'WRIT'=> 'Writing'}
+end
