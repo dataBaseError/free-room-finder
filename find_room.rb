@@ -34,7 +34,7 @@ class FindRoom
     end
 
 
-    # TODO Now we just need to find out when the previous class end and the next class starts to find out how long the class is really available for.
+    # Find out when the previous class end and the next class starts to find out how long the class is really available for.
     # Alteratively the possible rooms could be returned right now (without start/end times and removing duplicate rooms).
     def find_range(possible_rooms, start_time, end_time)
         if possible_rooms
@@ -63,6 +63,7 @@ class FindRoom
         return nil
     end
 
+    # Fill in the missing values were no class precede the desired start time or no class follows the desired end time.
     def print_range(range)
         #rooms = range.keys
         range.each do |room, times|

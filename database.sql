@@ -7,15 +7,22 @@ sudo -u postgres createdb free_room_finder
 sudo -u postgres psql free_room_finder
 */
 
-# Delete the existing information
-drop table if exists faculties;
-drop table if exists semesters;
-drop table if exists class_type;
-drop table if exists campus;
-drop table if exists rooms;
-drop table if exists professors;
-drop table if exists courses;
+/*
+createuser -d -P -s room-finder
+gNoXRPUWNZ4XL1r$W37iwnR8fVz:JN7hi7gq6P2o0Aci3pbG7B!Ld(Z7@0hXaxKfGy92GdryKw!NXbSZ
+ALTER USER postgres with password 'gNoXRPUWNZ4XL1r$W37iwnR8fVz:JN7hi7gq6P2o0Aci3pbG7B!Ld(Z7@0hXaxKfGy92GdryKw!NXbSZ';
+    */
+
+
+/* Delete the existing information */
 drop table if exists offerings;
+drop table if exists courses;
+drop table if exists professors;
+drop table if exists rooms;
+drop table if exists campus;
+drop table if exists class_type;
+drop table if exists semesters;
+drop table if exists faculties;
 
 /*
 faculties
@@ -26,10 +33,10 @@ faculties
 */
 CREATE TABLE faculties
 (
-    _id   serial,
-    code        VARCHAR(32) NOT NULL,
-    name        VARCHAR(64) NOT NULL,
-    PRIMARY KEY(_id)
+    faculties_id   serial,
+    faculty_code        TEXT NOT NULL,
+    faculty_name        TEXT NOT NULL,
+    PRIMARY KEY(faculties_id)
 );
 
 
@@ -39,15 +46,15 @@ semesters table
 ---------------
     - semesterId primary key NOT NULL
     - year YEAR(4) NOT NULL     (ie. 2012) 
-    - semester VARCHAR(32) NOT NULL     (ie. Winter, Spring/Summer, Summer)
+    - semester TEXT NOT NULL     (ie. Winter, Spring/Summer, Summer)
 */
 CREATE TABLE semesters
 (
-    _id  serial,
+    semesters_id  serial,
     year        INTEGER,
-    semester    VARCHAR(32) NOT NULL,
-    code        VARCHAR(32) NOT NULL,
-    PRIMARY KEY(_id)
+    semester    TEXT NOT NULL,
+    semester_code        TEXT NOT NULL,
+    PRIMARY KEY(semesters_id)
 );
 
 
@@ -61,10 +68,10 @@ class_type table
 */
 CREATE TABLE class_type
 (
-    _id     serial,
-    acr     VARCHAR(32),
-    type    VARCHAR(32),
-    PRIMARY KEY(_id)
+    class_type_id     serial,
+    acr     TEXT,
+    type    TEXT,
+    PRIMARY KEY(class_type_id)
 );
 
 
@@ -78,10 +85,10 @@ campus table
 */
 CREATE TABLE campus
 (
-    _id         serial,
-    acr         VARCHAR(32),
-    name        VARCHAR(64),
-    PRIMARY KEY(_id)
+    campus_id         serial,
+    campus_acr         TEXT,
+    campus_name        TEXT,
+    PRIMARY KEY(campus_id)
 );
 
 
@@ -90,22 +97,22 @@ CREATE TABLE campus
 users
 -----
     - userId primary key NOT NULL
-    - username VARCHAR(32) NOT NULL
-    - password VARCHAR(64) NOT NULL
+    - username TEXT NOT NULL
+    - password TEXT NOT NULL
 */
 /*
 CREATE TABLE users
 (
-    _id         serial,
-    first_name  VARCHAR(32),
-    last_name   VARCHAR(32),
-    student_id  BLOB,
-    email       VARCHAR(64),
-    username    VARCHAR(32),
+    id         serial,
+    first_name  TEXT,
+    last_name   TEXT,
+    studentid  BLOB,
+    email       TEXT,
+    username    TEXT,
     password    BLOB,
     reg_date    DATE,
     last_access DATE,
-    PRIMARY KEY (_id)
+    PRIMARY KEY (id)
 );
 */
 
@@ -115,7 +122,7 @@ CREATE TABLE users
 rooms
 -------
     - roomId primary key NOT NULL
-    - name VARCHAR(64) NOT NULL
+    - name TEXT NOT NULL
     - campusId INTEGER UNSIGNED NOT NULL
     - room_capacity (INTEGER) NOT NULL
     - room info such as
@@ -124,14 +131,14 @@ rooms
 */
 CREATE TABLE rooms
 (
-    _id             serial,
-    name            VARCHAR(32) NOT NULL,
-    campusId        serial,
+    rooms_id             serial,
+    room_name            TEXT NOT NULL,
+    campus_id       INTEGER,
     room_capacity   INTEGER NOT NULL,
     power_outlet    BOOLEAN,
     ethernet_ports  BOOLEAN,
-    PRIMARY KEY(_id),
-    FOREIGN KEY(campusId) REFERENCES campus(_id)
+    PRIMARY KEY(rooms_id),
+    FOREIGN KEY(campus_id) REFERENCES campus(campus_id)
         ON DELETE CASCADE    ON UPDATE CASCADE
 );
 
@@ -149,13 +156,13 @@ occupied
 /*
 CREATE TABLE occupied
 (
-    _id         serial,
+    id         serial,
     roomId      serial,
     start_time  timestamp,
     end_time    timestamp,
     num_people  INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY(_id),
-    FOREIGN KEY(roomId) REFERENCES rooms(_id)
+    PRIMARY KEY(id),
+    FOREIGN KEY(roomId) REFERENCES rooms(id)
         ON DELETE CASCADE    ON UPDATE CASCADE
 );
 */
@@ -164,21 +171,21 @@ CREATE TABLE occupied
 /*
 room_requests
 -------------
-    - user_id foreign key NOT NULL
+    - userid foreign key NOT NULL
     - occupyId foreign key NOT NULL
     - number_of_people INTEGER NOT NULL
 */
 /*
 CREATE TABLE room_requests
 (
-    _id         serial,
+    id         serial,
     userId      serial,
     occupyId    serial,
     num_people  INTEGER NOT NULL DEFAULT 1,
-    PRIMARY KEY(_id),
-    FOREIGN KEY(userId) REFERENCES users(_id)
+    PRIMARY KEY(id),
+    FOREIGN KEY(userId) REFERENCES users(id)
         ON DELETE CASCADE    ON UPDATE CASCADE,
-    FOREIGN KEY(occupyId) REFERENCES occupied(_id)
+    FOREIGN KEY(occupyId) REFERENCES occupied(id)
         ON DELETE CASCADE    ON UPDATE CASCADE
 );
 */
@@ -191,14 +198,14 @@ CREATE TABLE room_requests
 professors
 -----------
     - profId primary key NOT NULL
-    - name VARCHAR(32)
+    - name TEXT
     - facultyId foreign key   prof might not be easily linked
 */
 CREATE TABLE professors
 (
-    _id     serial,
-    name    VARCHAR(64),
-    PRIMARY KEY(_id)
+    professors_id     serial,
+    professor_name    TEXT,
+    PRIMARY KEY(professors_id)
 );
 
 
@@ -207,19 +214,19 @@ CREATE TABLE professors
 courses
 ---------
     - courseId primary key NOT NULL,
-    - course_code VARCHAR(4) NOT NULL
-    - name VARCHAR(64) NOT NULL
+    - course_code TEXT NOT NULL
+    - name TEXT NOT NULL
     - facultyId foreign key
 */
 CREATE TABLE courses
 (
-    _id         serial,
-    name        VARCHAR(64) NOT NULL,
-    course_code VARCHAR(32) NOT NULL,
-    level       VARCHAR(64) NOT NULL,
-    facultyId   serial,
-    PRIMARY KEY(_id),
-    FOREIGN KEY(facultyId) REFERENCES faculties(_id)
+    courses_id         serial,
+    course_name        TEXT NOT NULL,
+    course_code TEXT NOT NULL,
+    level       TEXT NOT NULL,
+    faculties_id  INTEGER,
+    PRIMARY KEY(courses_id),
+    FOREIGN KEY(faculties_id) REFERENCES faculties(faculties_id)
         ON DELETE SET NULL ON UPDATE CASCADE
 );
 
@@ -229,8 +236,8 @@ CREATE TABLE courses
 offerings
 -----------
     - courseId foreign key NOT NULL
-    - crn         VARCHAR(8)  NOT NULL,
-    - section     VARCHAR(3)  NOT NULL,
+    - crn         TEXT  NOT NULL,
+    - section     TEXT  NOT NULL,
     - typeId      INTEGER     UNSIGNED    NOT NULL,
     - registered INTEGER NOT NULL
     - day CHAR(1) NOT NULL
@@ -248,30 +255,30 @@ offerings
 */
 CREATE TABLE offerings
 (
-    _id         serial,
-    courseId    serial,
-    crn         VARCHAR(32)  NOT NULL,
-    section     VARCHAR(32)  NOT NULL,
-    typeId      serial,
-    registered  INTEGER NOT NULL,
-    day         VARCHAR(32),
-    week_alt    BOOLEAN     DEFAULT NULL,
-    profId      serial,
-    roomId      serial,
-    start_time  time,
-    end_time    time,
-    start_date  date,
-    end_date    date,
-    semesterId  serial,
-    PRIMARY KEY(_id),
-    FOREIGN KEY(courseId) REFERENCES courses(_id)
+    offerings_id            serial,
+    courses_id              INTEGER,
+    crn                     TEXT  NOT NULL,
+    section                 TEXT  NOT NULL,
+    class_type_id           INTEGER,
+    registered              INTEGER NOT NULL,
+    day                     TEXT,
+    week_alt                BOOLEAN     DEFAULT NULL,
+    professors_id           INTEGER,
+    rooms_id                INTEGER,
+    start_time              time,
+    end_time                time,
+    start_date              date,
+    end_date                date,
+    semesters_id            INTEGER,
+    PRIMARY KEY(offerings_id),
+    FOREIGN KEY(courses_id) REFERENCES courses(courses_id)
         ON DELETE CASCADE    ON UPDATE CASCADE,
-    FOREIGN KEY(typeId) REFERENCES class_type(_id)
+    FOREIGN KEY(class_type_id) REFERENCES class_type(class_type_id)
         ON DELETE CASCADE    ON UPDATE CASCADE,
-    FOREIGN KEY(profId) REFERENCES professors(_id)
+    FOREIGN KEY(professors_id) REFERENCES professors(professors_id)
         ON DELETE SET NULL    ON UPDATE CASCADE,
-    FOREIGN KEY(roomId) REFERENCES rooms(_id)    
+    FOREIGN KEY(rooms_id) REFERENCES rooms(rooms_id)    
         ON DELETE SET NULL    ON UPDATE CASCADE,
-    FOREIGN KEY(semesterId) REFERENCES semesters(_id)
+    FOREIGN KEY(semesters_id) REFERENCES semesters(semesters_id)
         ON DELETE CASCADE    ON UPDATE CASCADE
 );

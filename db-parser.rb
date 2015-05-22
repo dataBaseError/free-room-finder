@@ -50,9 +50,9 @@ class Parse
         url = getURL(Acronyms::CAMPUSES[campus], faculty, semester, year)
 
         # Get the semester and faculty id for later use.
-        campus_id = @db.get_id_existing('campus', {'acr' => campus.upcase})
-        semester_id = @db.get_id_existing('semesters', {'code' => "#{year}#{semester}"})
-        faculty_id = @db.get_id_existing('faculties', {'code' => faculty})
+        campus_id = @db.get_id_existing('campus', {'campus_acr' => campus.upcase})
+        semester_id = @db.get_id_existing('semesters', {'semester_code' => "#{year}#{semester}"})
+        faculty_id = @db.get_id_existing('faculties', {'faculty_code' => faculty})
 
         if @test
             puts "Campus_id = #{campus_id}, semester_id = #{semester_id}, faculty_id = #{faculty_id}"
@@ -76,9 +76,9 @@ class Parse
             # TODO This is inaccurate and needs to be fixed
             level = 'undergrade'#node.children[10].text.rstrip
 
-            course_search = {'name' => title_info['name']}
+            course_search = {'course_name' => title_info['name']}
             code = title_info['course_code'].split(/ /)[-1]
-            course_hash = {'name' => title_info['name'], 'course_code' => code, 'level' => level, 'facultyId' => faculty_id}
+            course_hash = {'course_name' => title_info['name'], 'course_code' => code, 'level' => level, 'faculties_id' => faculty_id}
             
             if @test
                 puts "course = #{course_hash}"
@@ -101,9 +101,6 @@ class Parse
                 i += 1
             end
             
-            #course_row << parseRow(course_info[2])
-            #puts "course_row = #{course_row}"
-
             # For each row of course information we'll insert the necessary information 
             course_row.each do |course|
 
@@ -120,13 +117,13 @@ class Parse
                 end
 
                 # Ethernet and power outlets are set to false since we can't really say given the information that there are any.
-                room = {'name' => room_name, 'campusId' => campus_id, 'room_capacity' => capacity["capacity"], 'power_outlet' => false, 'ethernet_ports' => false}
+                room = {'room_name' => room_name, 'campus_id' => campus_id, 'room_capacity' => capacity["capacity"], 'power_outlet' => false, 'ethernet_ports' => false}
 
                 if @test
                     puts "room = #{room}"
                 end
 
-                room_id = @db.insert_nonexist("rooms", {"name" => room_name}, room)
+                room_id = @db.insert_nonexist("rooms", {"room_name" => room_name}, room)
 
                 # Remove tailing bracket info
                 prof_name = course['instructor'].gsub(/ \(.*$/, '')
@@ -135,7 +132,7 @@ class Parse
                 #    prof_name = nil
                 #end
 
-                prof_info = {'name' => prof_name}
+                prof_info = {'professor_name' => prof_name}
                 # Next we check the professor
                 if @test
                     puts "prof = #{prof_info}"
@@ -174,7 +171,7 @@ class Parse
                 type_id = @db.insert_nonexist('class_type', class_type, class_type)
 
                 # Insert course offering information
-                offering_info = {'courseId' => course_id, 'crn' => title_info['crn'], 'section' => title_info['section'], 'typeId' => type_id, 'registered' => capacity["actual"], 'day' => course['days'], 'profId' => prof_id, 'roomId' => room_id, 'week_alt' => week_alt, 'start_time' => start_time, 'end_time' => end_time, 'start_date' => start_date, 'end_date' => end_date, 'semesterId' => semester_id}
+                offering_info = {'courses_id' => course_id, 'crn' => title_info['crn'], 'section' => title_info['section'], 'class_type_id' => type_id, 'registered' => capacity["actual"], 'day' => course['days'], 'professors_id' => prof_id, 'rooms_id' => room_id, 'week_alt' => week_alt, 'start_time' => start_time, 'end_time' => end_time, 'start_date' => start_date, 'end_date' => end_date, 'semesters_id' => semester_id}
 
                 # Remove the nil values
                 offering_info.compact
@@ -201,9 +198,9 @@ class Parse
                     # Store the term name, year and the code
                     term, year = result[0]
                     code = val.attribute("value").text
-                    entries = {'year' => year, 'semester' => term, 'code' => code}
+                    entries = {'year' => year, 'semester' => term, 'semester_code' => code}
                     # Inserting to db if they are not already there
-                    @db.insert_nonexist('semesters', {'code' => code}, entries)
+                    @db.insert_nonexist('semesters', {'semester_code' => code}, entries)
                 else
                     # Something went wrong!
                     puts "Invalid Semester Name: #{val.text}"
@@ -221,10 +218,10 @@ class Parse
 
                 # <Code> - <Full Name> 
                 code, full_name = splitRange(val.text.rstrip)
-                entries = {'code' => code, 'name' => full_name}
+                entries = {'faculty_code' => code, 'faculty_name' => full_name}
                 #puts "subjs = #{entries}"
                 # Insert into the db
-                @db.insert_nonexist('faculties', {'code' => code}, entries)
+                @db.insert_nonexist('faculties', {'faculty_code' => code}, entries)
             end
 
             # TODO test these two to make sure that the list lines up
@@ -264,9 +261,9 @@ class Parse
                         campus = result[0][2]
                     end
                     acr = val.attribute("value").text
-                    entries = {'name' => campus, 'acr' => acr}
+                    entries = {'campus_name' => campus, 'campus_acr' => acr}
                     #puts "campus = #{entries}"
-                    @db.insert_nonexist('campus', {'acr' => acr}, entries)
+                    @db.insert_nonexist('campus', {'campus_acr' => acr}, entries)
                 end
             end
         end
@@ -283,7 +280,7 @@ class Parse
         progress_indicator.puts "Loading Faculties..."
 
         # Get each faculty
-        faculties = @db.get_entries('faculties', ['code'])
+        faculties = @db.get_entries('faculties', ['faculty_code'])
         progress_indicator.total_length = faculties.size
 
         faculties.each_with_index do |hash, index|
@@ -292,10 +289,10 @@ class Parse
                 child.print_bar(["Parsing #{year}, #{semester}"])
             end
 
-            progress_indicator.percentComplete(["Parsing #{hash['code']}"])
+            progress_indicator.percentComplete(["Parsing #{hash['faculty_code']}"])
 
             # Start parsing
-            if parse(campus, hash['code'], semester, year) == false
+            if parse(campus, hash['faculty_code'], semester, year) == false
                 return false
             end
         end
@@ -378,25 +375,25 @@ private
 end
 
 
-#semester = 'winter'
+semester = 'winter'
 campus = 'UON'
-#year = 2010
-#short = "#{year}#{Acronyms::SEMESTER[semester]}"
+year = 2015
+short = "#{year}#{Acronyms::SEMESTER[semester]}"
 test = false
 
 
 parser = Parse.new(test)
 
 # Parse other information about the courses
-#parser.parseSemester
-#parser.getFaculties(short)
+parser.parseSemester
+parser.getFaculties(short)
 
 # Iterate through each faculty and retrieve all the classes
 #url = parser.getURL(Acronyms::CAMPUSES['ALL'], 'ENGR', Acronyms::SEMESTER['winter'], 2015)
 #parser.parse('UON', 'ELEE', Acronyms::SEMESTER['winter'], 2015)
 
-#parser.parseEachFaculty(campus, Acronyms::SEMESTER[semester], year)
-parser.parseEachSemester(campus)
+parser.parseEachFaculty(campus, Acronyms::SEMESTER[semester], year)
+#parser.parseEachSemester(campus)
 
 =begin
 

@@ -5,8 +5,16 @@ A implemented free room finder created in ruby. The parsing is done through a si
 ## Parsing Data
 
 1. Install the necessary ruby gems
+    apt-get install ruby-dev
+    apt-get install postgreql
+    apt-get install libpq-dev
 
-2. Open [db-parser.db](db-parser.rb) and modify the campus as needed.
+    gem install mechanize
+    gem install nokogiri
+    gem install json
+    gem install pg
+
+2. Open [db-parser.db](db-parser.rb) and modify the campus as needed. It is currently set to grab all data for every semester for the north campus.
 
 3. Run the script
 
@@ -15,8 +23,14 @@ A implemented free room finder created in ruby. The parsing is done through a si
 ## Run the web api
 
 1. Install the necessary ruby gems
+    gem install sinatra
 
-2. Run the web app.
+2. Configure the server (if running on a server)
+
+        set :bind, '0.0.0.0'
+        set :port, '94294'
+
+3. Run the web app.
 
         ruby app.rb
 

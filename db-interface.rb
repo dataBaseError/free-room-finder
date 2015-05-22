@@ -7,7 +7,6 @@ class DBinterface
 
     def initialize(name)
         @conn = PG.connect(dbname: name, user: USERNAME, password: PASSWORD, hostaddr: "127.0.0.1")
-        @prepare_hash = Hash.new
     end
 
     def insert(table, attributes)
@@ -16,18 +15,7 @@ class DBinterface
         attribute_name_list = attributes.keys.join(", ")
         list = prepare_statement_list(attributes.size).join(",")
 
-        # The second part creates a uuid for inserts where a column may not be inserted (offerings)
-        statement_name = "#{table}_#{attributes.keys.map{|x| x[0]}.join("")}"
-        # There might be an issue with postgresql or pg where if the prepare name is too long it just stops checking
-        #if statement_name == "offerings_courseIdcrnsectiontypeIdregistereddayprofIdroomIdstart_dateend_datesemesterId"
-        #    a = gets
-        #end
-        #puts "statement = #{statement_name}"
-        if @prepare_hash[statement_name] == nil
-            #puts "hash = #{@prepare_hash}"
-            #puts "#{statement_name} does not exist yet!"
-            @conn.prepare(statement_name, "
-            INSERT INTO 
+        query = "INSERT INTO 
                 #{table}
             (
                 #{attribute_name_list}
@@ -36,14 +24,12 @@ class DBinterface
             (
                 #{list}
             )
-            RETURNING _id")
-            @prepare_hash[statement_name] = true
-        end
+            RETURNING #{table}_id"
 
         id = nil
-        @conn.exec_prepared(statement_name, attributes.values) do |results|
+        @conn.exec_params(query, attributes.values) do |results|
             results.each do |value|
-                id = value["_id"]
+                id = value["#{table}_id"]
             end
         end
         return id
@@ -53,51 +39,41 @@ class DBinterface
 
         #attribute_values = prepare_values(identifier.values)
         attribute_name_list = identifier.keys
-        # TODO convert this to use prepared statements, this requires the statement to be prepared on the fly and also for the type of the identifier value(s) to be known.
+    
         # This would also force the insert to be prepared as well.
         attribute_list = set_prepare(attribute_name_list)
 
-        statement_name = "#{table}_id_exist"
-        if @prepare_hash[statement_name] == nil
-            @conn.prepare(statement_name, "
-            SELECT 
-                _id
+        query = "SELECT 
+                #{table}_id
             FROM 
                 #{table}
             WHERE
-                #{attribute_list}
-            ")
-            @prepare_hash[statement_name] = true
-        end
+                #{attribute_list}"
 
         params = create_params(identifier.values)
 
         id = nil
-        @conn.exec_prepared(statement_name, params) do |results|
+        @conn.exec_params(query, params) do |results|
             results.each do |value|
-                id = value["_id"]
+                id = value["#{table}_id"]
             end
         end
         return id
     end
 
-    def get_entries(table, attributes, identifier=nil)
+    def get_entries(table, attributes)
 
         attribute_name_list = attributes.join(", ")
-        where = ""
-        if identifier
-            where += "WHERE "
-            where += set_equal(identifier.keys, prepare_values(identifier.values))
-        end
 
         i = 0
         values = Array.new
+
+        # Could add prepare here.
         @conn.exec("
             SELECT 
                 #{attribute_name_list}
             FROM 
                 #{table}
-            #{where}
             ") do |results|
             results.each_row do |row|
                 values[i] = Hash.new
@@ -128,36 +104,32 @@ class DBinterface
 
         query = "
             SELECT 
-                r2._id,
-                r2.name,
+                r2.rooms_id,
+                r2.room_name,
                 o2.start_time,
                 o2.end_time
             FROM
-                offerings as o2 INNER JOIN
-                rooms as r2 ON o2.roomId = r2._id INNER JOIN
-                semesters as s2 ON o2.semesterId = s2._id INNER JOIN
-                campus as c2 ON r2.campusId = c2._id
+                offerings as o2 NATURAL JOIN
+                rooms as r2 NATURAL JOIN
+                semesters as s2 NATURAL JOIN
+                campus as c2
             WHERE
                 o2.day = $1 AND
-                c2.acr = $2 AND
-                s2.code = $3 AND
-                r2._id NOT IN
+                c2.campus_acr = $2 AND
+                s2.semester_code = $3 AND
+                r2.rooms_id NOT IN
                 (
                     SELECT DISTINCT
-                        r._id
-                        /*,
-                        r.name,
-                        o.start_time,
-                        o.end_time*/
+                        r.rooms_id
                     FROM 
-                        offerings as o INNER JOIN
-                        rooms as r ON o.roomId = r._id INNER JOIN
-                        semesters as s ON o.semesterId = s._id INNER JOIN
-                        campus as c ON r.campusId = c._id
+                        offerings as o NATURAL JOIN
+                        rooms as r NATURAL JOIN
+                        semesters as s NATURAL JOIN
+                        campus as c
                     WHERE
                         o.day = $1 AND
-                        c.acr = $2 AND
-                        s.code = $3 AND
+                        c.campus_acr = $2 AND
+                        s.semester_code = $3 AND
                         (
                             (
                                 /* This checks if the start time happens during the desired interval */
@@ -172,10 +144,10 @@ class DBinterface
                             )
                         )
                         OR
-                        r.name LIKE 'ONLINE%'
+                        r.room_name LIKE 'ONLINE%'
                 )
             order by
-                r2._id,
+                r2.rooms_id,
                 o2.start_time,
                 o2.end_time"
 
@@ -186,7 +158,7 @@ class DBinterface
         results = Array.new
         @conn.exec_params(query, param).each_row do |row|
             results << Hash.new
-            results[-1]['id'] = row[0]
+            results[-1]['rooms_id'] = row[0]
             results[-1]['room'] = row[1]
             results[-1]['start_time'] = row[2]
             results[-1]['end_time'] = row[3]
