@@ -303,7 +303,7 @@ class Parse
 
         progress_indicator = Progress.new("Schedual Parser #{campus}")
 
-        semesters = @db.get_entries('semesters', ['year', 'semester', 'code'])
+        semesters = @db.get_entries('semesters', ['year', 'semester', 'semester_code'])
         progress_indicator.total_length = semesters.size
 
         semesters.each_with_index do |hash, index|
@@ -311,7 +311,7 @@ class Parse
             progress_indicator.percentComplete(["Parsing #{hash['year']}, #{hash['semester']}"])
 
             #if hash['year'].to_i < 2010
-            getFaculties(hash['code'])
+            getFaculties(hash['semester_code'])
 
             if !parseEachFaculty(campus, Acronyms::SEMESTER[hash['semester'].downcase], hash['year'].downcase, progress_indicator)
                 return false
