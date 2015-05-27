@@ -8,15 +8,16 @@ else
     abort("Invalid parameters")
 end
 
-results = Utility.validateFindRoom(campus, date, start_time, duration)
+#results = Utility.validateFindRoom(campus, date, start_time, duration)
 
 # Simple command line interface to allow for finding free rooms on UOIT
 find_room = FindRoom.new
 
 # TODO print them nicely
-rooms = find_room.getRooms(results['campus'], results['day'], results['semester_code'], results['start_time'], results['end_time'])
+rooms = find_room.getRooms(campus, date, start_time, duration)
 
 puts "Rooms available on #{Acronyms::CAMPUS_ACRONYM[campus]} on #{date} from #{start_time} to #{results['end_time']}"
+
 rooms.each do |room, times|
-    puts "Room = #{room}, available from #{times['before']} - #{times['after']}"
+    puts "Room = #{room_name}, available for #{duration} from #{times['previous_time']} - #{times['next_time']}"
 end

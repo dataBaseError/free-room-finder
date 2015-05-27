@@ -5,8 +5,14 @@ class DBinterface
     USERNAME = "postgres"
     PASSWORD = "z3vvt0aTlkoPb5"
 
+    # Default port
+    PORT = '5432' #'5434'
+
+    OPENING_TIME = '8:00:00'
+    CLOSING_TIME = '23:00:00'
+
     def initialize(name)
-        @conn = PG.connect(dbname: name, user: USERNAME, password: PASSWORD, hostaddr: "127.0.0.1")
+        @conn = PG.connect(dbname: name, user: USERNAME, password: PASSWORD, hostaddr: "127.0.0.1", port: PORT)
     end
 
     def insert(table, attributes)
@@ -100,68 +106,74 @@ class DBinterface
         return id
     end
 
-    def get_available_classes(campus, day, semester_code, start_time, end_time)
+    # TODO expand to include campus as part of the query
+    def get_available_classes(campus, date, start_time, duration)
+
 
         query = "
-            SELECT 
-                r2.rooms_id,
-                r2.room_name,
-                o2.start_time,
-                o2.end_time
-            FROM
-                offerings as o2 NATURAL JOIN
-                rooms as r2 NATURAL JOIN
-                semesters as s2 NATURAL JOIN
-                campus as c2
-            WHERE
-                o2.day = $1 AND
-                c2.campus_acr = $2 AND
-                s2.semester_code = $3 AND
-                r2.rooms_id NOT IN
-                (
-                    SELECT DISTINCT
-                        r.rooms_id
-                    FROM 
-                        offerings as o NATURAL JOIN
-                        rooms as r NATURAL JOIN
-                        semesters as s NATURAL JOIN
-                        campus as c
-                    WHERE
-                        o.day = $1 AND
-                        c.campus_acr = $2 AND
-                        s.semester_code = $3 AND
-                        (
-                            (
-                                /* This checks if the start time happens during the desired interval */
-                                start_time >= $4 AND
-                                start_time < $5
-                            )
-                            OR
-                            (
-                                /* The case where the start time is before and the end time is during or after */
-                                start_time < $4 AND
-                                end_time > $4
-                            )
-                        )
-                        OR
-                        r.room_name LIKE 'ONLINE%'
-                )
-            order by
-                r2.rooms_id,
-                o2.start_time,
-                o2.end_time"
+            with day_offerings as
+            (
+                select *
+                from offerings
+                where day = dow($1)
+                and daterange(start_date, end_date, '[]') @> $1::date
+            ),
+            taken_rooms as
+            (
+                select distinct rooms_id
+                from day_offerings
+                where timerange(start_time, end_time, '()') &&
+                      timerange($2::time, $2::time + (interval '1 hours' * $3::numeric), '()')
+            ),
+            free_rooms as
+            (
+                select rooms_id
+                from rooms
+                natural join campus
+                where campus_acr = $4
+                except
+                select rooms_id from taken_rooms 
+            ),
+            free_info as
+            (
+                select rooms_id,
+                       (select offerings_id
+                        from day_offerings a
+                        where a.rooms_id = f.rooms_id
+                        and a.end_time <= $2::time
+                        order by end_time desc
+                        limit 1) as previous_offering_id,
+                       (select offerings_id
+                        from day_offerings a
+                        where a.rooms_id = f.rooms_id
+                        and a.start_time >= ($2::time + (interval '1 hours') * $3::numeric)
+                        order by start_time
+                        limit 1) as next_offering_id
+                from free_rooms f
+            )
+            select free_info.rooms_id,
+                   room_name,
+                   coalesce(prev_offering.end_time, #{OPENING_TIME}::time) as previous_time,
+                   coalesce(next_offering.start_time, #{CLOSING_TIME}::time) as next_time,
+                   (coalesce(next_offering.start_time, #{CLOSING_TIME}::time) - $2::time) as duration
+            from free_info
+            natural join rooms
+            left outer join offerings prev_offering on previous_offering_id = prev_offering.offerings_id
+            left outer join offerings next_offering on next_offering_id = next_offering.offerings_id
+            order by duration, room_name;"
 
         # Covert the array into a parameter hash that pg is expecting
-        param = create_params([day, campus, semester_code, start_time, end_time])
+        param = create_params([date, start_time, duration, campus])
 
         # Get the results
         results = Array.new
         @conn.exec_params(query, param).each_row do |row|
             results << Hash.new
             results[-1]['rooms_id'] = row[0]
-            results[-1]['room'] = row[1]
-            results[-1]['start_time'] = row[2]
-            results[-1]['end_time'] = row[3]
+            results[-1]['room_name'] = row[1]
+            results[-1]['previous_time'] = row[2]
+            results[-1]['next_time'] = row[3]
+            results[-1]['duration'] = row[4]
         end
         return results
     end

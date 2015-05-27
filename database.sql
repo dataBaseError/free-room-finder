@@ -282,3 +282,21 @@ CREATE TABLE offerings
     FOREIGN KEY(semesters_id) REFERENCES semesters(semesters_id)
         ON DELETE CASCADE    ON UPDATE CASCADE
 );
+
+CREATE FUNCTION dow(date_ DATE)
+RETURNS TEXT
+IMMUTABLE
+LANGUAGE SQL
+AS
+$$
+  SELECT CASE date_part('dow', $1)
+  WHEN 1 THEN 'M'
+  WHEN 2 THEN 'T'
+  WHEN 3 THEN 'W'
+  WHEN 4 THEN 'R'
+  WHEN 5 THEN 'F'
+  END;
+$$;
+
+create type timerange as range (subtype = time);
+create type daterange as range (subtype = date);
