@@ -153,9 +153,9 @@ class DBinterface
             )
             select free_info.rooms_id,
                    room_name,
-                   coalesce(prev_offering.end_time, #{OPENING_TIME}::time) as previous_time,
-                   coalesce(next_offering.start_time, #{CLOSING_TIME}::time) as next_time,
-                   (coalesce(next_offering.start_time, #{CLOSING_TIME}::time) - $2::time) as duration
+                   coalesce(prev_offering.end_time, '#{OPENING_TIME}'::time) as previous_time,
+                   coalesce(next_offering.start_time, '#{CLOSING_TIME}'::time) as next_time,
+                   (coalesce(next_offering.start_time, '#{CLOSING_TIME}'::time) - $2::time) as duration
             from free_info
             natural join rooms
             left outer join offerings prev_offering on previous_offering_id = prev_offering.offerings_id
@@ -169,7 +169,8 @@ class DBinterface
         results = Array.new
         @conn.exec_params(query, param).each_row do |row|
             results << Hash.new
-            results[-1]['rooms_id'] = row[0]
+            # Don't actually need the room id
+            #results[-1]['rooms_id'] = row[0]
             results[-1]['room_name'] = row[1]
             results[-1]['previous_time'] = row[2]
             results[-1]['next_time'] = row[3]
