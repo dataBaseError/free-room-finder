@@ -2,6 +2,16 @@
 
 A implemented free room finder created in ruby. The parsing is done through a simple command line tool. Finding free rooms can be done via command line or through the web json api.
 
+## Datebase setup
+
+1. Install postgresql 9.4 (note if you have previous version ensure that you are using 9.4), for debian https://wiki.postgresql.org/wiki/Apt
+
+
+2. Find the port 9.4 is running on and use that port to create and insert the schema
+        sudo service postgresql status
+        sudo -u postgres createdb -p<port> free-room-finder
+        sudo -u postgres psql -p<port> free-room-finder < database.sql
+
 ## Parsing Data
 
 1. Install the necessary ruby gems
