@@ -34,10 +34,10 @@ class Parse
         # campus and faculty.
 
         url = 'https://ssbp.mycampus.ca/prod/bwckschd.p_get_crse_unsec'
-        url += '?TRM=U&begin_ap=a&begin_hh=0&begin_mi=0&end_ap=a&end_hh=0&end_mi=0&sel_attr=dummy'
+        url += '?TRM=U&begin_ap=a&begin_hh=0&begin_mi=0&end_ap=a&end_hh=0&end_mi=0&sel_attr=dummy&sel_camp='
         url += campus
-        url += '&sel_crse=&sel_day=dummy&sel_from_cred=&sel_insm=dummy&sel_instr=dummy&sel_levl=dummy&sel_ptrm=dummy'
-        url += '&sel_schd=dummy&sel_sess=dummy&sel_subj=dummy&sel_subj='
+        url += '&sel_crse=&sel_day=dummy&sel_from_cred=&sel_insm=%25&sel_instr=dummy&sel_levl=dummy&sel_ptrm=dummy'
+        url += '&sel_schd=%25&sel_sess=dummy&sel_subj=dummy&sel_subj='
         url += faculty
         url += '&sel_title=&sel_to_cred=&term_in='
         url += year.to_s
@@ -45,12 +45,30 @@ class Parse
         return url
     end
 
-    def parse(campus, faculty, semester, year)
+    def find_campus(node)
 
-        url = getURL(Acronyms::CAMPUSES[campus], faculty, semester, year)
+        @campus_list.each do |campus|
+            if node.text.match(Regexp::new(campus['campus_name']))
+                return campus['campus_id']
+            end
+        end
+        
+        # Just return distance education cause w.e.
+        return @db.get_id_existing('campus', {'campus_acr' => "DE"})
+    end
+
+    def parse(faculty, semester, year)
+
+        # Campus apparently doesn't do anything in the url?
+        url = getURL('', faculty, semester, year)
+
+        @campus_list = @db.get_entries('campus', ['campus_name', 'campus_id'])
+
+        #Sort by list length and then reverse it to match to the most specific first (then to most vague) This prevents Oshawa superceeding North Oshawa.
+        @campus_list = @campus_list.sort_by {|x| x.length }.reverse
 
         # Get the semester and faculty id for later use.
-        campus_id = @db.get_id_existing('campus', {'campus_acr' => campus.upcase})
+        #campus_id = @db.get_id_existing('campus', {'campus_acr' => campus.upcase})
         semester_id = @db.get_id_existing('semesters', {'semester_code' => "#{year}#{semester}"})
         faculty_id = @db.get_id_existing('faculties', {'faculty_code' => faculty})
 
@@ -58,8 +76,9 @@ class Parse
             puts "Campus_id = #{campus_id}, semester_id = #{semester_id}, faculty_id = #{faculty_id}"
         end
 
-        if campus_id == nil || semester_id == nil || faculty_id == nil
-            puts "Campus, Semester or Faculty not found, call parseSemester and getFaculties for the given semester"
+        #campus_id == nil ||
+        if semester_id == nil || faculty_id == nil
+            puts "Semester or Faculty not found, call parseSemester and getFaculties for the given semester"
             return false
         end
 
@@ -73,8 +92,14 @@ class Parse
             # get the information about the course
             title_info = parseCourse(course_headers[i])
 
-            # TODO This is inaccurate and needs to be fixed
-            level = 'undergrade'#node.children[10].text.rstrip
+            level = node.text.scan(/Levels: ([A-Za-z ,]+)\n/)
+            
+            if level && !level.empty? && !level[0].empty?
+                level = level[0][0].strip
+            else 
+                # If the regular expression cannot find it just label it as unknown
+                level = 'Unknown'
+            end
 
             course_search = {'course_name' => title_info['name']}
             code = title_info['course_code'].split(/ /)[-1]
@@ -100,6 +125,8 @@ class Parse
                 course_row << parseRow(course_info[i])
                 i += 1
             end
+
+            campus_id = find_campus(node)
             
             # For each row of course information we'll insert the necessary information 
             course_row.each do |course|
@@ -269,13 +296,13 @@ class Parse
         end
     end
 
-    def parseEachFaculty(campus, semester, year, child=nil)
+    def parseEachFaculty(semester, year, child=nil)
 
         second = true
         if child == nil
             second = false
         end
-        progress_indicator = Progress.new("Schedual Parser #{campus}, #{semester}, #{year}", second)
+        progress_indicator = Progress.new("Schedual Parser #{semester}, #{year}", second)
 
         progress_indicator.puts "Loading Faculties..."
 
@@ -292,16 +319,16 @@ class Parse
             progress_indicator.percentComplete(["Parsing #{hash['faculty_code']}"])
 
             # Start parsing
-            if parse(campus, hash['faculty_code'], semester, year) == false
+            if parse(hash['faculty_code'], semester, year) == false
                 return false
             end
         end
     end
 
-    def parseEachSemester(campus)
+    def parseEachSemester()
         parseSemester
 
-        progress_indicator = Progress.new("Schedual Parser #{campus}")
+        progress_indicator = Progress.new("Schedual Parser")
 
         semesters = @db.get_entries('semesters', ['year', 'semester', 'semester_code'])
         progress_indicator.total_length = semesters.size
@@ -313,7 +340,7 @@ class Parse
             #if hash['year'].to_i < 2010
             getFaculties(hash['semester_code'])
 
-            if !parseEachFaculty(campus, Acronyms::SEMESTER[hash['semester'].downcase], hash['year'].downcase, progress_indicator)
+            if !parseEachFaculty(Acronyms::SEMESTER[hash['semester'].downcase], hash['year'].downcase, progress_indicator)
                 return false
             end
             #end
@@ -322,7 +349,7 @@ class Parse
 
 private
 
-    ROOM_REGEX = /(\w+)$/
+    ROOM_REGEX = /([\w\-]+)$/
             
     # Campus names are a bit funny this regex may break easily for new campuses
     CAMPUS_NAME = /UOIT ?(-(Off)?)? (.*)/
@@ -375,8 +402,8 @@ private
 end
 
 
-semester = 'winter'
-campus = 'UON'
+semester = 'fall'
+#campus = 'UON'
 year = 2015
 short = "#{year}#{Acronyms::SEMESTER[semester]}"
 test = false
@@ -392,7 +419,7 @@ parser.getFaculties(short)
 #url = parser.getURL(Acronyms::CAMPUSES['ALL'], 'ENGR', Acronyms::SEMESTER['winter'], 2015)
 #parser.parse('UON', 'ELEE', Acronyms::SEMESTER['winter'], 2015)
 
-parser.parseEachFaculty(campus, Acronyms::SEMESTER[semester], year)
+parser.parseEachFaculty(Acronyms::SEMESTER[semester], year)
 #parser.parseEachSemester(campus)
 
 =begin
