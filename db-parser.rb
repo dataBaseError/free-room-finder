@@ -26,37 +26,6 @@ class Parse
         @test = test
     end
 
-    #https://ssbp.mycampus.ca/prod/bwckschd.p_disp_dyn_sched?TRM=UA2240
-    #https://ssbprod.aac.mycampus.ca/prod/bwckschd.p_disp_dyn_sched?TRM=U
-    #https://ssbp.mycampus.ca/prod/bwckschd.p_get_crse_unsec?TRM=U&begin_ap=a&begin_hh=0&begin_mi=0&end_ap=a&end_hh=0&end_mi=0&sel_attr=dummy&sel_camp=%25&sel_crse=&sel_day=dummy&sel_from_cred=&sel_insm=dummy&sel_instr=dummy&sel_levl=dummy&sel_ptrm=dummy&sel_schd=dummy&sel_sess=dummy&sel_subj=dummy&sel_subj=ENGR&sel_title=&sel_to_cred=&term_in=201501
-    def getURL(campus, faculty, semester, year)
-        # A function which returns a url to get the course schedule based on the
-        # campus and faculty.
-
-        url = 'https://ssbp.mycampus.ca/prod/bwckschd.p_get_crse_unsec'
-        url += '?TRM=U&begin_ap=a&begin_hh=0&begin_mi=0&end_ap=a&end_hh=0&end_mi=0&sel_attr=dummy&sel_camp='
-        url += campus
-        url += '&sel_crse=&sel_day=dummy&sel_from_cred=&sel_insm=%25&sel_instr=dummy&sel_levl=dummy&sel_ptrm=dummy'
-        url += '&sel_schd=%25&sel_sess=dummy&sel_subj=dummy&sel_subj='
-        url += faculty
-        url += '&sel_title=&sel_to_cred=&term_in='
-        url += year.to_s
-        url += semester
-        return url
-    end
-
-    def find_campus(node)
-
-        @campus_list.each do |campus|
-            if node.text.match(Regexp::new(campus['campus_name']))
-                return campus['campus_id']
-            end
-        end
-        
-        # Just return distance education cause w.e.
-        return @db.get_id_existing('campus', {'campus_acr' => "DE"})
-    end
-
     def parse(faculty, semester, year)
 
         # Campus apparently doesn't do anything in the url?
@@ -214,7 +183,7 @@ class Parse
     end
 
     
-    def parseSemester()
+    def parseSemester
         agent = Mechanize.new
         agent.get("https://ssbp.mycampus.ca/prod/bwckschd.p_disp_dyn_sched?TRM=U") do |page|
 
@@ -325,7 +294,7 @@ class Parse
         end
     end
 
-    def parseEachSemester()
+    def parseEachSemester
         parseSemester
 
         progress_indicator = Progress.new("Schedual Parser")
@@ -358,6 +327,37 @@ private
     COURSE_NAMES = ["name", "crn", "course_code", "section"]
 
     NUMBERS = ["capacity", "actual", "Remaining"]
+
+    #https://ssbp.mycampus.ca/prod/bwckschd.p_disp_dyn_sched?TRM=UA2240
+    #https://ssbprod.aac.mycampus.ca/prod/bwckschd.p_disp_dyn_sched?TRM=U
+    #https://ssbp.mycampus.ca/prod/bwckschd.p_get_crse_unsec?TRM=U&begin_ap=a&begin_hh=0&begin_mi=0&end_ap=a&end_hh=0&end_mi=0&sel_attr=dummy&sel_camp=%25&sel_crse=&sel_day=dummy&sel_from_cred=&sel_insm=dummy&sel_instr=dummy&sel_levl=dummy&sel_ptrm=dummy&sel_schd=dummy&sel_sess=dummy&sel_subj=dummy&sel_subj=ENGR&sel_title=&sel_to_cred=&term_in=201501
+    def getURL(campus, faculty, semester, year)
+        # A function which returns a url to get the course schedule based on the
+        # campus and faculty.
+
+        url = 'https://ssbp.mycampus.ca/prod/bwckschd.p_get_crse_unsec'
+        url += '?TRM=U&begin_ap=a&begin_hh=0&begin_mi=0&end_ap=a&end_hh=0&end_mi=0&sel_attr=dummy&sel_camp='
+        url += campus
+        url += '&sel_crse=&sel_day=dummy&sel_from_cred=&sel_insm=%25&sel_instr=dummy&sel_levl=dummy&sel_ptrm=dummy'
+        url += '&sel_schd=%25&sel_sess=dummy&sel_subj=dummy&sel_subj='
+        url += faculty
+        url += '&sel_title=&sel_to_cred=&term_in='
+        url += year.to_s
+        url += semester
+        return url
+    end
+
+    def find_campus(node)
+
+        @campus_list.each do |campus|
+            if node.text.match(Regexp::new(campus['campus_name']))
+                return campus['campus_id']
+            end
+        end
+        
+        # Just return distance education cause w.e.
+        return @db.get_id_existing('campus', {'campus_acr' => "DE"})
+    end
 
     def parseCapacity(node)
         result = Hash.new
@@ -400,29 +400,3 @@ private
         return [nil,nil]
     end
 end
-
-
-semester = 'fall'
-#campus = 'UON'
-year = 2015
-short = "#{year}#{Acronyms::SEMESTER[semester]}"
-test = false
-
-
-parser = Parse.new(test)
-
-# Parse other information about the courses
-parser.parseSemester
-parser.getFaculties(short)
-
-# Iterate through each faculty and retrieve all the classes
-#url = parser.getURL(Acronyms::CAMPUSES['ALL'], 'ENGR', Acronyms::SEMESTER['winter'], 2015)
-#parser.parse('UON', 'ELEE', Acronyms::SEMESTER['winter'], 2015)
-
-parser.parseEachFaculty(Acronyms::SEMESTER[semester], year)
-#parser.parseEachSemester(campus)
-
-=begin
-
-           
-=end
