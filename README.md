@@ -24,11 +24,11 @@ A implemented free room finder created in ruby. The parsing is done through a si
     gem install json
     gem install pg
 
-2. Open [db-parser.db](db-parser.rb) and modify the campus as needed. It is currently set to grab all data for every semester for the north campus.
+2. Open [parse.db](parse.rb) and modify the campus as needed. It is currently set to grab all data for every semester for the north campus.
 
 3. Run the script
 
-        ruby db-parser.rb
+        ruby parse.rb
 
 ## Run the web api
 
@@ -46,23 +46,32 @@ A implemented free room finder created in ruby. The parsing is done through a si
 
 ### API Commands
 
-1. Find free rooms on a campus
+* Find free rooms on a campus
 
         get '/rooms/:campus/:date/:start_time/:duration'
 
-campus
-- UON - North Oshawa Campus
-- UOD - Downtown Oshawa Campus
-- UOG - Georgian Campus
+    campus
+    - UON - North Oshawa Campus
+    - UOD - Downtown Oshawa Campus
+    - UOG - Georgian Campus
+ 
+    date
+    - Formated date, YYYY-MM-DD (e.g. 2015-05-14)
 
-date
-- Formated date, YYYY-MM-DD (e.g. 2015-05-14)
+    start_time
+    - Formated time, HH-MM-SS (e.g. 13:10:00)
 
-start_time
-- Formated time, HH-MM-SS (e.g. 13:10:00)
+    duration
+    - Number of hours the event will last for (e.g. 3 would be for a 3 hours event)
 
-duration
-- Number of hours the event will last for (e.g. 3 would be for a 3 hours event)
+* Find all the available campuses
+
+        get '/campus'
+
+* Find all the available semesters
+
+        get '/semesters'
+
 
 ## Run command line finder
 
