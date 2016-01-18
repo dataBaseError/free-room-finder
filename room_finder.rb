@@ -16,8 +16,8 @@ find_room = FindRoom.new
 # TODO print them nicely
 rooms = find_room.getRooms(campus, date, start_time, duration)
 
-puts "Rooms available on #{Acronyms::CAMPUS_ACRONYM[campus]} on #{date} from #{start_time} to #{results['end_time']}"
+puts "Rooms available on #{Acronyms::CAMPUS_ACRONYM[campus]} on #{date} from #{start_time} for #{duration}"
 
-rooms.each do |room, times|
-    puts "Room = #{room_name}, available for #{duration} from #{times['previous_time']} - #{times['next_time']}"
+rooms.each do |room|
+    puts "Room = #{room['room_name']}, available for #{room['duration']} from #{room['previous_time']} - #{room['next_time']}"
 end
